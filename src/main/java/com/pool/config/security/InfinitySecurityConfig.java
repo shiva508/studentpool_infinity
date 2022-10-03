@@ -46,12 +46,12 @@ public class InfinitySecurityConfig {
 			    		   						.authenticated()
 			    		   			 )
 			       .userDetailsService(userProfileService)
-			       //.formLogin()
-			      // .and()
-			      // .exceptionHandling(exe->exe.accessDeniedHandler(null)
+			       .formLogin()
+			       .and()
+			       //.exceptionHandling(exe->exe.accessDeniedHandler(null)
 			      //		   					  .authenticationEntryPoint(authenticationEntryPoint))
-			       //.httpBasic(Customizer.withDefaults())
-			       //.headers(header->header.frameOptions().sameOrigin())
+			       .httpBasic(Customizer.withDefaults())
+			       .headers(header->header.frameOptions().sameOrigin())
 			       .build();
 	}
 	

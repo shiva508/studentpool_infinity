@@ -51,7 +51,7 @@ public class UserProfileServiceImpl implements UserProfileService {
 	}
 
 	@Override
-	@Transactional
+	@Transactional(readOnly = true)
 	public List<UserProfile> findAll() {
 		List<UserProfile> users = userProfileRepository.findAll();
 		if (null == users || users.isEmpty()) {

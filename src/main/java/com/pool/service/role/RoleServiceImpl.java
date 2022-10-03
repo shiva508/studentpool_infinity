@@ -3,14 +3,13 @@ package com.pool.service.role;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
-
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.pool.entity.role.Role;
 import com.pool.mapper.role.RoleMapper;
 import com.pool.model.CommonResponse;
+import com.pool.model.exception.RoleException;
 import com.pool.model.exception.UserProfileException;
 import com.pool.repository.role.RoleRepository;
 import com.pool.util.InfinityConstants;
@@ -37,8 +36,12 @@ public class RoleServiceImpl implements RoleService {
 	@Override
 	@Transactional
 	public List<Role> roles() {
-
-		return roleRepository.findAll();
+	    List<Role> roles = roleRepository.findAll();
+	    if(!roles.isEmpty()) {
+	        return roles;
+	    }else {
+	        throw new RoleException(InfinityConstants.ROLE_EMPTY_MSG);
+	    }
 	}
 
 	@Override
@@ -61,7 +64,7 @@ public class RoleServiceImpl implements RoleService {
 			
 			return commonResponse;
 		}else {
-			throw new UserProfileException(InfinityConstants.USER_PROFILE_NOT_FOUND);
+			throw new UserProfileException(InfinityConstants.ROLE_NOT_FOUND_MSG);
 		}
 		
 	}

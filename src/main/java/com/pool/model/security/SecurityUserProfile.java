@@ -1,10 +1,10 @@
 package com.pool.model.security;
 
 import java.util.Collection;
-
+import java.util.stream.Collectors;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
-
 import com.pool.entity.user.UserProfile;
 
 public class SecurityUserProfile implements UserDetails {
@@ -19,7 +19,10 @@ public class SecurityUserProfile implements UserDetails {
 
 	@Override
 	public Collection<? extends GrantedAuthority> getAuthorities() {
-		return null;
+	    return userProfile.getRoles()
+	                     .stream()
+	                     .map(role->new SimpleGrantedAuthority(role.getRole()))
+	                     .collect(Collectors.toList());
 	}
 
 	@Override

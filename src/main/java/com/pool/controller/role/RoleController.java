@@ -29,7 +29,7 @@ public class RoleController {
 		return new ResponseEntity<>(createdRole, HttpStatus.CREATED);
 	}
 
-	@GetMapping("/roles")
+	@GetMapping("/all")
 	public ResponseEntity<?> getRoles() {
 		List<Role> roles = roleService.roles();
 		return new ResponseEntity<>(roles, HttpStatus.OK);
