@@ -23,5 +23,9 @@ public class InfinityConstants {
 	
 	public static final String ROLE_NOT_FOUND_MSG="Role not found";
 	
+	public static final long EXPIRATION_TIME=30000;
+	
+	public static final String TOKEN_PREFIX = "Bearer ";
+	
 	
 }

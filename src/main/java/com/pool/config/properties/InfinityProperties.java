@@ -22,4 +22,7 @@ public class InfinityProperties {
 	
 	@Value("#{'${infinity.security.publicurls}'.split(',')}")
 	private String[] publicUrls;
+	
+	@Value("${infinity.security.jwt.secret}")
+	private String jwtSecret;
 }

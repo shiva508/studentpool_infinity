@@ -13,6 +13,7 @@ public class SecurityUserProfile implements UserDetails {
 	
 	private UserProfile userProfile;
 	
+	
 	public SecurityUserProfile(UserProfile userProfile) {
 		this.userProfile = userProfile;
 	}
@@ -55,4 +56,12 @@ public class SecurityUserProfile implements UserDetails {
 		return true;
 	}
 
+    public String getAvatharId() {
+        return userProfile.getAvatharId();
+    }
+
+    public String getFirstName() {
+        return userProfile.getFirstName();
+    }
+   
 }
