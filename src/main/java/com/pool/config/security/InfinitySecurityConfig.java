@@ -17,10 +17,10 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import com.pool.config.handler.CustomAccessDeniedHandler;
 import com.pool.config.properties.InfinityProperties;
 import com.pool.config.security.entrypoint.CustomAuthenticationEntryPoint;
 import com.pool.config.security.filter.JwtAuthenticationFilter;
+import com.pool.config.security.handler.CustomAccessDeniedHandler;
 import com.pool.service.user.SecurityUserProfileService;
 
 @Configuration
@@ -67,13 +67,15 @@ public class InfinitySecurityConfig {
 			    		   						.authenticated()
 			    		   			 )
 			       .userDetailsService(userProfileService)
-			       .addFilterBefore(authenticationFilter, UsernamePasswordAuthenticationFilter.class)
-			       .formLogin()
-			       .and()
+			      
+			       //.formLogin()
+			       //.and()
 			       .exceptionHandling(exe->exe.accessDeniedHandler(deniedHandler)
-			      		   					  .authenticationEntryPoint(authenticationEntryPoint))
-			       .httpBasic(Customizer.withDefaults())
-			       .headers(header->header.frameOptions().sameOrigin())
+			      		   					  .authenticationEntryPoint(authenticationEntryPoint)
+			                          )
+			       //.httpBasic(Customizer.withDefaults())
+			       //.headers(header->header.frameOptions().sameOrigin())
+			       .addFilterBefore(authenticationFilter, UsernamePasswordAuthenticationFilter.class)
 			       .build();
 	}
 	

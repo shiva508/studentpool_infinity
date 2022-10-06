@@ -25,4 +25,7 @@ public class InfinityProperties {
 	
 	@Value("${infinity.security.jwt.secret}")
 	private String jwtSecret;
+	
+	@Value("${infinity.security.jwt.exp_time}")
+	private Long expirationTime;
 }

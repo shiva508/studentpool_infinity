@@ -5,7 +5,6 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -14,6 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.pool.config.security.jwt.JwtTokenService;
 import com.pool.model.auth.LoginRequest;
 import com.pool.model.auth.TokenResponse;
+import com.pool.util.InfinityConstants;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -29,10 +29,10 @@ public class LoginController {
     public TokenResponse login(@RequestBody LoginRequest loginRequest) {
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(loginRequest.getUsername(), loginRequest.getPassword()));
-        SecurityContextHolder.getContext().setAuthentication(authentication);
-        String token = jwtTokenProvider.tokenGenerator(authentication);
+        //SecurityContextHolder.getContext().setAuthentication(authentication);
+        String token = jwtTokenProvider.jwtTokenGenerator(authentication);
         TokenResponse response = new TokenResponse();
-        response.setToken(token);
+        response.setToken(InfinityConstants.TOKEN_PREFIX+token);
         return response;
     }
 

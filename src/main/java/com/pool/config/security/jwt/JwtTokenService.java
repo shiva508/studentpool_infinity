@@ -1,114 +1,137 @@
 package com.pool.config.security.jwt;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
-
 import javax.servlet.http.HttpServletRequest;
-
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.web.authentication.WebAuthenticationDetails;
+import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
-import org.springframework.util.StringUtils;
-
+import com.auth0.jwt.JWT;
+import com.auth0.jwt.JWTVerifier;
+import com.auth0.jwt.algorithms.Algorithm;
+import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.pool.config.properties.InfinityProperties;
-import com.pool.model.ROLES;
 import com.pool.model.security.SecurityUserProfile;
 import com.pool.util.InfinityConstants;
 
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.ExpiredJwtException;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.MalformedJwtException;
-import io.jsonwebtoken.SignatureAlgorithm;
-import io.jsonwebtoken.SignatureException;
-import io.jsonwebtoken.UnsupportedJwtException;
-import lombok.extern.slf4j.Slf4j;
-
 @Component
-@Slf4j
 public class JwtTokenService {
     
-    private InfinityProperties infinityProperties;
+    @Value("${infinity.security.jwt.secret}")
+    private String jwtSecret;
     
+    
+    private InfinityProperties infinityProperties;
+
     public JwtTokenService(InfinityProperties infinityProperties) {
         this.infinityProperties = infinityProperties;
     }
+    
+    public String generateJwtToken(SecurityUserProfile userPrincipal) {
+        String claims[]=extractClaimsFromUser(userPrincipal);
+        String jwtToken=JWT.create()
+                           .withIssuer(InfinityConstants.GET_ARRAYS_LLC)
+                           .withAudience(InfinityConstants.GET_ARRAYS_ADMINISTRATION)
+                           .withIssuedAt(new Date(System.currentTimeMillis()))
+                           .withSubject(userPrincipal.getUsername())
+                           .withArrayClaim(InfinityConstants.AUTHORITIES, claims)
+                           .withExpiresAt(new Date(System.currentTimeMillis()+InfinityConstants.EXPIRATION_TIME))
+                           .sign(generateAlgorithm(jwtSecret));
+                           
+        return jwtToken;
+    }
 
-    public String tokenGenerator(Authentication authentication) {
-        SecurityUserProfile userProfile =(SecurityUserProfile) authentication.getPrincipal();
-                
-        Date endDate=new Date(System.currentTimeMillis()+InfinityConstants.EXPIRATION_TIME);
-        Map<String, Object> claims=new HashMap<>();
-        claims.put("username", userProfile.getUsername());
-        claims.put("firstname", userProfile.getFirstName());
-        claims.put("avatharid", userProfile.getAvatharId());
-        String roles=userProfile.getAuthorities().stream().map(gran->gran.getAuthority()).collect(Collectors.joining(","));
-        claims.put("roles", roles);
-        
-        return Jwts.builder()
-                   .setSubject(userProfile.getUsername())
-                   .setClaims(claims)
-                   .setIssuedAt(new Date())
-                   .setExpiration(endDate)
-                   .signWith(SignatureAlgorithm.HS512,infinityProperties.getJwtSecret())
-                   .compact();
+    public String[] extractClaimsFromUser(SecurityUserProfile userPrincipal) {
+        List<String> cliamsList=userPrincipal.getAuthorities()
+                                             .stream()
+                                             .map(auth->auth.getAuthority())
+                                             .collect(Collectors.toList());
+        return cliamsList.stream().toArray(String[]::new);
     }
     
-    public boolean tokenValidator(String jwtToken) {
+    public Algorithm generateAlgorithm(String secret) {
+        Algorithm algorithm = Algorithm.HMAC512(secret.getBytes());
+        return algorithm;
+    }
+    
+    public List<GrantedAuthority> extractAuthoritiesFromToken(String jwtToken){
+        String[] claims=extractClaimsFromJwtToken(jwtToken);
+        List<String> claimList=Arrays.asList(claims);
+        return claimList.stream()
+                        .map(SimpleGrantedAuthority::new)
+                        .collect(Collectors.toList());
+    }
+
+    public String[] extractClaimsFromJwtToken(String jwtToken) {
+        JWTVerifier jwtVerifier=getJwtVerifier();
+        return jwtVerifier.verify(jwtToken).getClaim(InfinityConstants.AUTHORITIES).asArray(String.class);
+    }
+
+    public JWTVerifier getJwtVerifier() {
+        JWTVerifier jwtVerifier;
         try {
-          Jwts.parser()
-            .setSigningKey(infinityProperties.getJwtSecret())
-            .parseClaimsJws(jwtToken);
-           return true;
-        } catch (SignatureException exe) {
-            log.error("SignatureException", exe);
-        }catch (MalformedJwtException exe) {
-            log.error("MalformedJwtException", exe);
-        }catch (ExpiredJwtException exe) {
-            log.error("ExpiredJwtException", exe);
-        }catch (UnsupportedJwtException exe) {
-            log.error("UnsupportedJwtException", exe);
-        }catch (IllegalArgumentException exe) {
-            log.error("IllegalArgumentException", exe);
+            Algorithm algorithm = generateAlgorithm(jwtSecret);
+            jwtVerifier=JWT.require(algorithm).withIssuer(InfinityConstants.GET_ARRAYS_LLC).build();
+        } catch (JWTVerificationException jwtVerificationException) {
+            throw new JWTVerificationException(InfinityConstants.TOKEN_CANNOT_BE_VERIFIED);
         }
-        return false; 
+        return jwtVerifier;
     }
     
-    public String userDetailsExtractor(String jwtToken,String key) {
-        Claims claims=Jwts.parser()
-            .setSigningKey(infinityProperties.getJwtSecret())
-            .parseClaimsJwt(jwtToken)
-            .getBody();
-        Object obje=(String)claims.get(key)!=null?claims.get(key):"";
-        return (String)obje;
-    }
-    
-    
-    public List<GrantedAuthority> userRolesExtractor(String rolse) {
-        List<GrantedAuthority>authorities=new ArrayList<>();
-        if(StringUtils.hasText(rolse)) {
-            authorities=Arrays.asList(rolse.split(",")).stream().map(SimpleGrantedAuthority::new).collect(Collectors.toList());
-        }else {
-            authorities.add(new SimpleGrantedAuthority(ROLES.USER.getRole()));
-        }
-        return authorities;
-    }
-    
-    public Authentication buildAuthenticationObject(String username,
-                                                    List<GrantedAuthority> grantedAuthorities,
-                                                    HttpServletRequest httpServletRequest) {
-        
-        UsernamePasswordAuthenticationToken authenticationToken=new UsernamePasswordAuthenticationToken(username,null,grantedAuthorities);
-        authenticationToken.setDetails(new WebAuthenticationDetails(httpServletRequest));
+    public Authentication buildAuthenticationObject(String username,List<GrantedAuthority> grantedAuthorities,HttpServletRequest httpServletRequest) {
+        UsernamePasswordAuthenticationToken authenticationToken=new UsernamePasswordAuthenticationToken(username, null, grantedAuthorities);
+        authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(httpServletRequest));
         return authenticationToken;
+        
+    }
+    
+    public boolean isTokenValid(String username,String token) {
+        JWTVerifier jwtVerifier=getJwtVerifier();
+        return StringUtils.isNotEmpty(username) && isJwtTokenExpaired(jwtVerifier,token);
+    }
+
+    public boolean isJwtTokenExpaired(JWTVerifier jwtVerifier,String token) {
+        Date expairationDate=jwtVerifier.verify(token).getExpiresAt();
+        return expairationDate.after(new Date());
+    }
+    
+    public String extractSubjectFromToken(String jwtToken) {
+        JWTVerifier jwtVerifier=getJwtVerifier();
+        return jwtVerifier.verify(jwtToken).getSubject();
+    }
+
+    public HttpHeaders generateJwtHeaders(SecurityUserProfile userPrincipal) {
+        HttpHeaders httpHeaders=new HttpHeaders();
+        httpHeaders.add(InfinityConstants.JWT_TOKEN_HEADER, generateJwtToken(userPrincipal));
+        return httpHeaders;
+    }
+    
+    public String generateJwtTokenValue(SecurityUserProfile userPrincipal) {
+        return generateJwtToken(userPrincipal);
+    }
+
+    
+    public String jwtTokenGenerator(Authentication authentication) {
+        SecurityUserProfile userPrincipal = (SecurityUserProfile) authentication.getPrincipal();
+        String claims[]=extractClaimsFromUser(userPrincipal);
+        String jwtToken=JWT.create()
+                           .withIssuer(InfinityConstants.GET_ARRAYS_LLC)
+                           .withAudience(InfinityConstants.GET_ARRAYS_ADMINISTRATION)
+                           .withIssuedAt(new Date(System.currentTimeMillis()))
+                           .withSubject(userPrincipal.getUsername())
+                           .withArrayClaim(InfinityConstants.AUTHORITIES, claims)
+                           .withExpiresAt(new Date(System.currentTimeMillis()+InfinityConstants.EXPIRATION_TIME))
+                           .sign(generateAlgorithm(jwtSecret));
+                           
+        return jwtToken;
     }
     
 }

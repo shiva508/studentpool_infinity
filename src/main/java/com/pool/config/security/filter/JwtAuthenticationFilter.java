@@ -1,23 +1,22 @@
 package com.pool.config.security.filter;
 
 import java.io.IOException;
+import java.util.Enumeration;
 import java.util.List;
 
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 import com.pool.config.security.jwt.JwtTokenService;
 import com.pool.util.InfinityConstants;
-
 import lombok.extern.slf4j.Slf4j;
 
 @Component
@@ -34,29 +33,37 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, 
                                     HttpServletResponse response, 
                                     FilterChain filterChain)throws ServletException, IOException {
-        try {
-            String jwtToken=jwtTokenExtractor(request);
-            
-            if(StringUtils.hasText(jwtToken) && jwtTokenService.tokenValidator(jwtToken) ) {
-                String username=jwtTokenService.userDetailsExtractor(jwtToken, "username");
-                String roles=jwtTokenService.userDetailsExtractor(jwtToken, "roles");
-                List<GrantedAuthority> authorities=jwtTokenService.userRolesExtractor(roles);
-                if(StringUtils.hasText(username) && null==SecurityContextHolder.getContext().getAuthentication()) {
-                    Authentication authentication = jwtTokenService.buildAuthenticationObject(username,authorities,request);
-                    SecurityContextHolder.getContext().setAuthentication(authentication); 
-                }
-               
+        if(request.getMethod().equalsIgnoreCase(InfinityConstants.OPTIONS_HTTP_METHOD)) {
+            response.setStatus(HttpStatus.OK.value());
+        }else {
+            String authorizationHeader=request.getHeader(InfinityConstants.JWT_TOKEN_HEADER);
+            if(null ==authorizationHeader || !authorizationHeader.startsWith(InfinityConstants.TOKEN_PREFIX)) {
+                filterChain.doFilter(request, response);
+                return;
             }
             
-        } catch (Exception e) {
-           log.error("error", e);
+            String jwtToken=authorizationHeader.substring(InfinityConstants.TOKEN_PREFIX.length());
+            String username=jwtTokenService.extractSubjectFromToken(jwtToken);
+            if(jwtTokenService.isTokenValid(username, jwtToken)) {
+                if(SecurityContextHolder.getContext().getAuthentication() ==null) {
+                    List<GrantedAuthority>  authorities=jwtTokenService.extractAuthoritiesFromToken(jwtToken);
+                    Authentication authentication=jwtTokenService.buildAuthenticationObject(username, authorities, request);
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
+                }                
+            }else {
+                SecurityContextHolder.clearContext();
+            }
         }
         filterChain.doFilter(request, response);
     }
 
     public String jwtTokenExtractor(HttpServletRequest request) {
-        String authorizationHeader=request.getHeader(HttpHeaders.AUTHORIZATION);
-        if( StringUtils.hasText(authorizationHeader) &&  authorizationHeader.startsWith(HttpHeaders.AUTHORIZATION)) {
+        Enumeration<String> headerNames = request.getHeaderNames();
+        while(headerNames.hasMoreElements()) {
+           System.out.println(headerNames.nextElement()); 
+        }
+        String authorizationHeader=request.getHeader("authorization");
+        if( StringUtils.hasText(authorizationHeader) &&  authorizationHeader.startsWith(InfinityConstants.TOKEN_PREFIX)) {
             return authorizationHeader.substring(InfinityConstants.TOKEN_PREFIX.length());
         }
         return null;
