@@ -14,14 +14,18 @@ import com.pool.model.exception.UserProfileException;
 import com.pool.repository.role.RoleRepository;
 import com.pool.util.InfinityConstants;
 
+import lombok.extern.slf4j.Slf4j;
+
 @Service
+@Slf4j
 public class RoleServiceImpl implements RoleService {
 
 	private final RoleRepository roleRepository;
 	
 	private final RoleMapper roleMapper;
 	
-	public RoleServiceImpl(RoleRepository roleRepository, RoleMapper roleMapper) {
+	public RoleServiceImpl(RoleRepository roleRepository, 
+	                       RoleMapper roleMapper) {
 		this.roleRepository = roleRepository;
 		this.roleMapper = roleMapper;
 	}
@@ -29,12 +33,15 @@ public class RoleServiceImpl implements RoleService {
 	@Override
 	@Transactional
 	public Role save(Role role) {
+	  
 		roleMapper.mapper(role);
-		return roleRepository.save(role);
+		log.info("save role input:{}",role);
+		Role savedRole = roleRepository.save(role);
+		return savedRole;
 	}
 
 	@Override
-	@Transactional
+	@Transactional(readOnly = true)
 	public List<Role> roles() {
 	    List<Role> roles = roleRepository.findAll();
 	    if(!roles.isEmpty()) {

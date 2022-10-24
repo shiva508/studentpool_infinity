@@ -1,0 +1,35 @@
+
+
+/*===BIG --TABLETS====*/
+@media only screen and (max-width:1200px){
+    .hero-text-box {
+        width: 100%;
+        padding: 0 2%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+      }
+      .row{
+          padding: 0 2%;
+      }
+}
+
+/*===SMALL-BIG --TABLETS====*/
+@media only screen and (max-width:1023px){
+    body{
+        font-size: 18px;
+    }
+    section{
+        padding: 60px 0;
+    }
+
+}
+
+/*===IPOD--TABLETS====*/
+@media only screen and (max-width:767px){
+    
+}
+
+/*===SMALL PHONES====*/
+@media only screen and (max-width:480px){
+    
+}

@@ -1,9 +1,7 @@
 package com.pool.config.security.filter;
 
 import java.io.IOException;
-import java.util.Enumeration;
 import java.util.List;
-
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -17,10 +15,8 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 import com.pool.config.security.jwt.JwtTokenService;
 import com.pool.util.InfinityConstants;
-import lombok.extern.slf4j.Slf4j;
 
 @Component
-@Slf4j
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
     
     private JwtTokenService jwtTokenService;
@@ -58,10 +54,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     public String jwtTokenExtractor(HttpServletRequest request) {
-        Enumeration<String> headerNames = request.getHeaderNames();
-        while(headerNames.hasMoreElements()) {
-           System.out.println(headerNames.nextElement()); 
-        }
         String authorizationHeader=request.getHeader("authorization");
         if( StringUtils.hasText(authorizationHeader) &&  authorizationHeader.startsWith(InfinityConstants.TOKEN_PREFIX)) {
             return authorizationHeader.substring(InfinityConstants.TOKEN_PREFIX.length());

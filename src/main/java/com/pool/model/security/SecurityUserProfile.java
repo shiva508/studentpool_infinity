@@ -1,10 +1,16 @@
 package com.pool.model.security;
 
 import java.util.Collection;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
+
+import com.pool.entity.role.Role;
 import com.pool.entity.user.UserProfile;
 
 public class SecurityUserProfile implements UserDetails {
@@ -64,4 +70,24 @@ public class SecurityUserProfile implements UserDetails {
         return userProfile.getFirstName();
     }
    
+    public Map<Long, String> getRolesMap(){
+       return userProfile.getRoles()
+                         .stream()
+                         .sorted(Comparator.comparing(Role::getName))
+                         .collect(Collectors.toMap(Role::getRoleId,
+                                                   Role::getName,
+                                                   (oldval,newval)->oldval,
+                                                   LinkedHashMap::new)); 
+    }
+    
+    public List<String> getRoles(){
+        return userProfile.getRoles()
+                          .stream()
+                          .sorted(Comparator.comparing(Role::getName))
+                          .map(Role::getName)
+                          .collect(Collectors.toList()); 
+     }
+    
+    
+    
 }

@@ -19,16 +19,17 @@ public class UserProfileMapper {
 	public void mapper(UserProfile userProfile) {
 		
 		String unEncriptedPassword=userProfile.getPassword();
-		
+		//ENCODING PASSWORD
 		String encriptedPassword=bCryptPasswordEncoder.encode(unEncriptedPassword);
 		
 		userProfile.setPassword(encriptedPassword);
 		
+		//AVATHAR BUILDER
 		StringBuilder avatharBuilder=new StringBuilder();
-		
 		avatharBuilder.append(userProfile.getFirstName().toUpperCase().charAt(0));
 		avatharBuilder.append(userProfile.getLastName().toUpperCase().charAt(0));
-		avatharBuilder.append(new Random().nextInt(6));
+		avatharBuilder.append(new Random().nextInt(100000));
+		
 		userProfile.setAvatharId(avatharBuilder.toString());
 		
 	}

@@ -1,0 +1,51 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+	<style>
+		h1 {
+			color: brown;
+		}
+
+		.quotation {
+			width: 100%;
+		}
+
+		.quotation,
+		.quotation th,
+		.quotation td {
+			border: 1px solid brown;
+			border-collapse: collapse;
+		}
+
+		.quotation th {
+			background-color: brown;
+			color: white;
+		}
+
+		.userinfo {
+			color: rgb(51, 209, 122)
+		}
+	</style>
+</head>
+
+<body>
+	<div class="container">
+		<div class="login__section">
+			<h2 class="login__header">Login</h2>
+			<div class="username__section">
+				<label htmlFor="username">User Name</label>
+				<input id="username" type="text" />
+			</div>
+			<div class="password__section">
+				<label htmlFor="password">Password</label>
+				<input id="password" type="password" />
+			</div>
+			<button class="submit__btn">
+				Submit
+			</button>
+		</div>
+	</div>
+</body>
+
+</html>

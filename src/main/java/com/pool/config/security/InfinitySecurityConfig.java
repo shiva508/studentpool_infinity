@@ -3,20 +3,20 @@ package com.pool.config.security;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.ProviderManager;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.Customizer;
-import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
-import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-
 import com.pool.config.properties.InfinityProperties;
 import com.pool.config.security.entrypoint.CustomAuthenticationEntryPoint;
 import com.pool.config.security.filter.JwtAuthenticationFilter;
@@ -36,14 +36,15 @@ public class InfinitySecurityConfig {
 	
 	private final SecurityUserProfileService userProfileService; 
 	
+	private final CustomAccessDeniedHandler deniedHandler;
 	
-	private CustomAccessDeniedHandler deniedHandler;
-	
-	private JwtAuthenticationFilter authenticationFilter;
+	private final JwtAuthenticationFilter authenticationFilter;
 	
 	public InfinitySecurityConfig(InfinityProperties infinityProperties,
-            CustomAuthenticationEntryPoint authenticationEntryPoint, SecurityUserProfileService userProfileService,
-            CustomAccessDeniedHandler deniedHandler, JwtAuthenticationFilter authenticationFilter) {
+                                  CustomAuthenticationEntryPoint authenticationEntryPoint, 
+                                  SecurityUserProfileService userProfileService,
+                                  CustomAccessDeniedHandler deniedHandler, 
+                                  JwtAuthenticationFilter authenticationFilter) {
         this.infinityProperties = infinityProperties;
         this.authenticationEntryPoint = authenticationEntryPoint;
         this.userProfileService = userProfileService;
@@ -51,15 +52,25 @@ public class InfinitySecurityConfig {
         this.authenticationFilter = authenticationFilter;
     }
 
-    @Bean
+   /* @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration)
             throws Exception {
         return authenticationConfiguration.getAuthenticationManager();
+    }*/
+    
+    @Bean
+    public AuthenticationManager authenticationManager(UserDetailsService userDetailsService){
+        var authprovider=new DaoAuthenticationProvider();
+        authprovider.setUserDetailsService(userDetailsService);
+        authprovider.setPasswordEncoder(bCryptPasswordEncoder());
+        return new ProviderManager(authprovider);
     }
+    
 	
 	@Bean
 	public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 		return http.csrf(csrf->csrf.disable())
+		           .cors(Customizer.withDefaults())
 			       .sessionManagement(session->session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 			       .authorizeRequests(auth->auth.antMatchers(infinityProperties.getPublicUrls())
 			    		   						.permitAll()
@@ -67,15 +78,13 @@ public class InfinitySecurityConfig {
 			    		   						.authenticated()
 			    		   			 )
 			       .userDetailsService(userProfileService)
-			      
-			       //.formLogin()
-			       //.and()
+			       .addFilterBefore(authenticationFilter, UsernamePasswordAuthenticationFilter.class)
 			       .exceptionHandling(exe->exe.accessDeniedHandler(deniedHandler)
 			      		   					  .authenticationEntryPoint(authenticationEntryPoint)
 			                          )
-			       //.httpBasic(Customizer.withDefaults())
-			       //.headers(header->header.frameOptions().sameOrigin())
-			       .addFilterBefore(authenticationFilter, UsernamePasswordAuthenticationFilter.class)
+			       .formLogin(Customizer.withDefaults())
+			       .httpBasic(Customizer.withDefaults())
+			       .headers(header->header.frameOptions().sameOrigin())
 			       .build();
 	}
 	
